@@ -39,6 +39,7 @@ class SearchableListenerTest extends BaseTestCaseORM
     {
         $indexedTokensRepo = $this->em->getRepository(self::INDEXED_TOKEN_CLASS);
         $storedObjectsRepo = $this->em->getRepository(self::STORED_OBJECT_CLASS);
+        
         $articleTitle = '  Title    with   spaces      ';
         $art0 = new Article();
         $art0->setTitle($articleTitle);
@@ -70,7 +71,7 @@ class SearchableListenerTest extends BaseTestCaseORM
 
                     break;
                 case 'title':
-                    $this->assertTrue($token === 'Title' || $token === 'with' || $token === 'spaces');
+                    $this->assertTrue($token === 'title' || $token === 'with' || $token === 'spaces');
 
                     break;
                 default:
@@ -108,7 +109,7 @@ class SearchableListenerTest extends BaseTestCaseORM
 
                     break;
                 case 'title':
-                    $this->assertTrue($token === 'NEW' || $token === 'TITLE');
+                    $this->assertTrue($token === 'new' || $token === 'title');
 
                     break;
                 default:
@@ -140,10 +141,5 @@ class SearchableListenerTest extends BaseTestCaseORM
             self::INDEXED_TOKEN_CLASS,
             self::STORED_OBJECT_CLASS
         );
-    }
-
-    private function populate()
-    {
-
     }
 }

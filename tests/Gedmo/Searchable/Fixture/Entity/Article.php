@@ -7,6 +7,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * @ORM\Entity
+ * @Gedmo\Searchable
  */
 class Article
 {
@@ -14,16 +15,11 @@ class Article
      * @ORM\Column(name="id", type="integer")
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
-     * @Gedmo\Searchable
      */
     private $id;
 
     /**
      * @ORM\Column(name="title", type="string")
-     * @Gedmo\Searchable(indexed=true, stored=true, processors={
-     *    @Gedmo\SearchableProcessor(class="Gedmo\Searchable\Processor\Filter\TrimFilter"),
-     *    @Gedmo\SearchableProcessor(class="Gedmo\Searchable\Processor\Tokenizer\DelimiterTokenizer")
-     * })
      */
     private $title;
 

@@ -23,9 +23,14 @@ use Gedmo\Mapping\Driver\AnnotationDriverInterface,
 class Annotation implements AnnotationDriverInterface
 {
     /**
-     * Annotation to define that this object is loggable
+     * Annotation to define that the object is searchable
      */
     const SEARCHABLE = 'Gedmo\\Mapping\\Annotation\\Searchable';
+
+    /**
+     * Annotation to define that the field is searchable
+     */
+    const SEARCHABLE_FIELD = 'Gedmo\\Mapping\\Annotation\\SearchableField';
 
     /**
      * Annotation reader instance
@@ -62,6 +67,11 @@ class Annotation implements AnnotationDriverInterface
     public function readExtendedMetadata($meta, array &$config)
     {
         $class = $meta->getReflectionClass();
+        // class annotations
+        if ($annot = $this->reader->getClassAnnotation($class, self::SEARCHABLE)) {
+            $config['searchable'] = true;
+        }
+
         // property annotations
         foreach ($class->getProperties() as $property) {
             if (($meta->isMappedSuperclass && !$property->isPrivate()) ||
@@ -72,8 +82,16 @@ class Annotation implements AnnotationDriverInterface
             }
             
             // searchable property
-            if ($searchable = $this->reader->getPropertyAnnotation($property, self::SEARCHABLE)) {
-                $field = $property->getName();
+            $field = $property->getName();
+            $fieldConfig = array(
+                'indexed'               => true,
+                'stored'                => true,
+                'processors'            => array(),
+                'indexTimeProcessors'   => array(),
+                'queryTimeProcessors'   => array()
+            );
+
+            if ($searchable = $this->reader->getPropertyAnnotation($property, self::SEARCHABLE_FIELD)) {
                 if ($meta->isCollectionValuedAssociation($field)) {
                     throw new InvalidMappingException("Cannot search [{$field}] as it is a collection in object - {$meta->name}");
                 }
@@ -82,32 +100,88 @@ class Annotation implements AnnotationDriverInterface
                     throw new InvalidMappingException("Searchable Field [{$field}] must be stored, indexed or both in object - {$meta->name}");
                 }
 
-                $indexTimeProcessors = array();
-                $queryTimeProcessors = array();
-
-                foreach ($searchable->processors as $processor) {
-                    $processor->context = AbstractProcessor::CONTEXT_BOTH;
-
-                    $indexTimeProcessors[] = $processor;
-                    $queryTimeProcessors[] = $processor;
-                }
-
-                foreach ($searchable->indexTimeProcessors as $processor) {
-                    $processor->context = AbstractProcessor::CONTEXT_INDEX;
-                }
-
-                foreach ($searchable->queryTimeProcessors as $processor) {
-                    $processor->context = AbstractProcessor::CONTEXT_QUERY;
-                }
-
                 $config['searchable'] = true;
-                $config['fields'][$field] = array(
-                    'indexTimeProcessors'       => $indexTimeProcessors,
-                    'queryTimeProcessors'       => $queryTimeProcessors,
-                    'indexed'                   => $searchable->indexed,
-                    'stored'                    => $searchable->stored
-                );
             }
+
+            if (isset($config['searchable']) && $config['searchable']) {
+                if (empty($fieldConfig['processors']) && empty($fieldConfig['indexTimeProcessors']) &&
+                    empty($fieldConfig['queryTimeProcessors'])) {
+                    $this->determineBestDefaultProcessorsForField($meta, $field, $fieldConfig['indexTimeProcessors'], $fieldConfig['queryTimeProcessors']);
+                } else {
+                    foreach ($fieldConfig['processors'] as $processor) {
+                        $processor = (array) $processor;
+                        $processorData = array(
+                            'context'       => AbstractProcessor::CONTEXT_BOTH,
+                            'class'         => $processor['class'],
+                            'parameters'    => $processor['parameters']
+                        );
+
+                        $fieldConfig['indexTimeProcessors'][] = $processorData;
+                        $fieldConfig['queryTimeProcessors'][] = $processorData;
+                    }
+
+                    foreach ($fieldConfig['indexTimeProcessors'] as $processor) {
+                        $processor = (array) $processor;
+                        $processorData = array(
+                            'context'       => AbstractProcessor::CONTEXT_INDEX,
+                            'class'         => $processor['class'],
+                            'parameters'    => $processor['parameters']
+                        );
+
+                        $fieldConfig['indexTimeProcessors'][] = $processorData;
+                    }
+
+                    foreach ($fieldConfig['queryTimeProcessors'] as $processor) {
+                        $processor = (array) $processor;
+                        $processorData = array(
+                            'context'       => AbstractProcessor::CONTEXT_QUERY,
+                            'class'         => $processor['class'],
+                            'parameters'    => $processor['parameters']
+                        );
+
+                        $fieldConfig['queryTimeProcessors'][] = $processorData;
+                    }
+                }
+            }
+            
+            $config['fields'][$field] = array(
+                'indexTimeProcessors'       => $fieldConfig['indexTimeProcessors'],
+                'queryTimeProcessors'       => $fieldConfig['queryTimeProcessors'],
+                'indexed'                   => $fieldConfig['indexed'],
+                'stored'                    => $fieldConfig['stored']
+            );
+        }
+    }
+
+    protected function determineBestDefaultProcessorsForField($meta, $field, &$indexTimeProcessors, $queryTimeProcessors)
+    {
+        $mapping = $meta->getFieldMapping($field);
+
+        switch ($mapping['type']) {
+            case 'string':
+            case 'text':
+                $processors = array(
+                    array(
+                        'context'       => AbstractProcessor::CONTEXT_BOTH,
+                        'class'         => 'Gedmo\Searchable\Processor\Filter\TrimFilter',
+                        'parameters'    => array()
+                    ),
+                    array(
+                        'context'       => AbstractProcessor::CONTEXT_BOTH,
+                        'class'         => 'Gedmo\Searchable\Processor\Filter\LowerCaseFilter',
+                        'parameters'    => array()
+                    ),
+                    array(
+                        'context'       => AbstractProcessor::CONTEXT_BOTH,
+                        'class'         => 'Gedmo\Searchable\Processor\Tokenizer\DelimiterTokenizer',
+                        'parameters'    => array()
+                    )
+                );
+
+                $indexTimeProcessors = array_merge($indexTimeProcessors, $processors);
+                $queryTimeProcessors = array_merge($queryTimeProcessors, $processors);
+
+                break;
         }
     }
 

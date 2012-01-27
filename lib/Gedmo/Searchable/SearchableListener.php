@@ -242,8 +242,8 @@ class SearchableListener extends MappedEventSubscriber
                     $tokenizedValue = array($value);
                     
                     foreach ($fieldInfo['indexTimeProcessors'] as $processorInfo) {
-                        $refl = new \ReflectionClass($processorInfo->class);
-                        $processor = $refl->newInstanceArgs(array_merge(array($tokenizedValue), $processorInfo->parameters));
+                        $refl = new \ReflectionClass($processorInfo['class']);
+                        $processor = $refl->newInstanceArgs(array_merge(array($tokenizedValue), $processorInfo['parameters']));
                         $tokenizedValue = $processor->process();
                     }
 

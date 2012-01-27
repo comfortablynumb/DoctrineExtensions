@@ -8,7 +8,7 @@ use Doctrine\Common\Annotations\Annotation;
  * Searchable annotation for Searchable behavioral extension
  *
  * @Annotation
- * @Target("PROPERTY")
+ * @Target("CLASS")
  *
  * @author Gustavo Falco <comfortablynumb84@gmail.com>
  * @author Gediminas Morkevicius <gediminas.morkevicius@gmail.com>
@@ -19,19 +19,5 @@ use Doctrine\Common\Annotations\Annotation;
  */
 final class Searchable extends Annotation
 {
-    /** @var array */
-    public $processors = array();
-
-    /** @var array */
-    public $indexTimeProcessors = array();
-
-    /** @var array */
-    public $queryTimeProcessors = array();
-
-    /** @var boolean */
-    public $indexed = true;
-
-    /** @var boolean */
-    public $stored = true;
 }
 
