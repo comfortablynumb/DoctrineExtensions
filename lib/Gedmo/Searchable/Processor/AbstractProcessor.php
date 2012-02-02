@@ -1,16 +1,17 @@
 <?php
 
+namespace Gedmo\Searchable\Processor;
+
 /**
  * Abstract Processor class
  *
  * @author Gustavo Falco <comfortablynumb84@gmail.com>
- * @package Gedmo.Searchable.Processor.Processor
- * @subpackage Processor
+ * @author Gediminas Morkevicius <gediminas.morkevicius@gmail.com>
+ * @package Gedmo.Searchable.Processor
+ * @subpackage AbstractProcessor
  * @link http://www.gediminasm.org
  * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
-
-namespace Gedmo\Searchable\Processor;
 
 abstract class AbstractProcessor
 {

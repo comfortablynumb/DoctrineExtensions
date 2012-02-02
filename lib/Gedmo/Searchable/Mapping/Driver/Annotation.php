@@ -153,7 +153,7 @@ class Annotation implements AnnotationDriverInterface
         }
     }
 
-    protected function determineBestDefaultProcessorsForField($meta, $field, &$indexTimeProcessors, $queryTimeProcessors)
+    protected function determineBestDefaultProcessorsForField($meta, $field, &$indexTimeProcessors, &$queryTimeProcessors)
     {
         $mapping = $meta->getFieldMapping($field);
 
@@ -179,7 +179,7 @@ class Annotation implements AnnotationDriverInterface
                 );
 
                 $indexTimeProcessors = array_merge($indexTimeProcessors, $processors);
-                $queryTimeProcessors = array_merge($queryTimeProcessors, $processors);
+                $queryTimeProcessors = $indexTimeProcessors;
 
                 break;
         }

@@ -23,6 +23,17 @@ class Article
      */
     private $title;
 
+    /**
+     * @ORM\Column(name="category", type="string")
+     */
+    private $category = 'Default Category';
+
+    /**
+     * @ORM\Column(name="visits", type="integer")
+     */
+    private $visits = 0;
+    
+
     public function getId()
     {
         return $this->id;
@@ -36,5 +47,25 @@ class Article
     public function getTitle()
     {
         return $this->title;
+    }
+
+    public function setCategory($category)
+    {
+        $this->category = $category;
+    }
+
+    public function getCategory()
+    {
+        return $this->category;
+    }
+
+    public function setVisits($visits)
+    {
+        $this->visits = $visits;
+    }
+
+    public function getVisits()
+    {
+        return $this->visits;
     }
 }

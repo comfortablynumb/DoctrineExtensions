@@ -35,12 +35,24 @@ class SearchableRepositoryTest extends BaseTestCaseORM
         $evm->addEventSubscriber($this->searchableListener);
 
         $this->em = $this->getMockSqliteEntityManager($evm);
-        $this->searchableRepository = new SearchableRepository($this->em, $this->em->getClassMetadata(self::INDEXED_TOKEN_CLASS));
+        $this->searchableRepository = new SearchableRepository($this->em, $this->em->getClassMetadata(self::ARTICLE));
+
+        $this->populate();
     }
     
     public function testSearchableRepository()
     {
-        
+        $results = $this->searchableRepository->search(self::ARTICLE);
+
+        $this->assertEquals(4, count($results));
+
+        $results = $this->searchableRepository->search(self::ARTICLE, array(array('title' => 'title wonderful article')));
+
+        $this->assertEquals(1, count($results));
+
+        $results = $this->searchableRepository->search(self::ARTICLE, array(array('visits' => array('>=' => 100))));
+
+        $this->assertEquals(2, count($results));
     }
 
     protected function getUsedEntityFixtures()
@@ -54,6 +66,37 @@ class SearchableRepositoryTest extends BaseTestCaseORM
 
     private function populate()
     {
+        $art1 = $this->createArticle();
+        $art1->setTitle('New title for this wonderful Article');
+        $art1->setCategory('Computers');
+        $art1->setVisits(100);
 
+        $art2 = $this->createArticle();
+        $art2->setTitle('Barcelona wins again vs Real Madrid');
+        $art2->setCategory('Soccer');
+        $art2->setVisits(3500);
+
+        $art3 = $this->createArticle();
+        $art3->setTitle('Girls in Mars detected!');
+        $art3->setCategory('Science');
+        $art3->setVisits(12);
+
+        $art4 = $this->createArticle();
+        $art4->setTitle('How to cook a chicken?');
+        $art4->setCategory('Food');
+        $art4->setVisits(42);
+
+        $this->em->persist($art1);
+        $this->em->persist($art2);
+        $this->em->persist($art3);
+        $this->em->persist($art4);
+
+        $this->em->flush();
+    }
+
+    private function createArticle()
+    {
+        $class = self::ARTICLE;
+        return new $class;
     }
 }

@@ -7,7 +7,8 @@ use Doctrine\Common\Persistence\ObjectManager,
     Gedmo\Mapping\MappedEventSubscriber,
     Gedmo\Searchable\Mapping\Event\SearchableAdapter,
     Doctrine\Common\EventArgs,
-    Doctrine\ORM\NoResultException;
+    Doctrine\ORM\NoResultException,
+    Gedmo\Searchable\Processor\ProcessorManager;
 
 /**
  * Searchable listener
@@ -229,6 +230,8 @@ class SearchableListener extends MappedEventSubscriber
             }
 
             $om->persist($storedObject);
+
+            $processorManager = new ProcessorManager($config);
             
             foreach ($config['fields'] as $field => $fieldInfo) {
                 if ($field === $identifierField && $objectId === null) {
@@ -239,13 +242,7 @@ class SearchableListener extends MappedEventSubscriber
                     $refl = $meta->getReflectionProperty($field);
                     $refl->setAccessible(true);
                     $value = $refl->getValue($object);
-                    $tokenizedValue = array($value);
-                    
-                    foreach ($fieldInfo['indexTimeProcessors'] as $processorInfo) {
-                        $refl = new \ReflectionClass($processorInfo['class']);
-                        $processor = $refl->newInstanceArgs(array_merge(array($tokenizedValue), $processorInfo['parameters']));
-                        $tokenizedValue = $processor->process();
-                    }
+                    $tokenizedValue = $processorManager->runIndexTimeProcessors($field, $value);
 
                     foreach ($tokenizedValue as $token) {
                         $indexedToken = new $indexedTokenClass;

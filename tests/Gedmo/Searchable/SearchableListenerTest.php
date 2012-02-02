@@ -60,7 +60,7 @@ class SearchableListenerTest extends BaseTestCaseORM
         /** INSERTING OBJECTS  */
 
         // First we check the indexed tokens
-        $this->assertEquals(4, count($tokens));
+        $this->assertEquals(7, count($tokens));
 
         foreach ($tokens as $tokenData) {
             $token = $tokenData['token'];
@@ -74,6 +74,14 @@ class SearchableListenerTest extends BaseTestCaseORM
                     $this->assertTrue($token === 'title' || $token === 'with' || $token === 'spaces');
 
                     break;
+                case 'category':
+                    $this->assertTrue($token === 'default' || $token === 'category');
+
+                    break;
+                case 'visits':
+                    $this->assertEquals(0, $token);
+
+                    break;
                 default:
                     $this->fail(sprintf('There was an indexed token for an invalid field "%s"', $tokenData['field']));
             }
@@ -82,7 +90,9 @@ class SearchableListenerTest extends BaseTestCaseORM
         // Now we check the stored object
         $this->assertEquals(array(
             'id'            => $art0->getId(),
-            'title'         => $articleTitle
+            'title'         => $articleTitle,
+            'category'      => 'Default Category',
+            'visits'        => 0
         ), $storedObject->getData());
 
         /** UPDATING OBJECTS  */
@@ -98,7 +108,7 @@ class SearchableListenerTest extends BaseTestCaseORM
             ->getArrayResult();
 
         // First we check the indexed tokens
-        $this->assertEquals(3, count($tokens));
+        $this->assertEquals(6, count($tokens));
 
         foreach ($tokens as $tokenData) {
             $token = $tokenData['token'];
@@ -112,6 +122,14 @@ class SearchableListenerTest extends BaseTestCaseORM
                     $this->assertTrue($token === 'new' || $token === 'title');
 
                     break;
+                case 'category':
+                    $this->assertTrue($token === 'default' || $token === 'category');
+
+                    break;
+                case 'visits':
+                    $this->assertEquals(0, $token);
+
+                    break;
                 default:
                     $this->fail(sprintf('There was an indexed token for an invalid field "%s"', $tokenData['field']));
             }
@@ -120,7 +138,9 @@ class SearchableListenerTest extends BaseTestCaseORM
         // Now we check the stored object
         $this->assertEquals(array(
             'id'            => $art0->getId(),
-            'title'         => $articleTitle
+            'title'         => $articleTitle,
+            'category'      => 'Default Category',
+            'visits'        => 0
         ), $storedObject->getData());
 
         /** REMOVING OBJECTS  */
