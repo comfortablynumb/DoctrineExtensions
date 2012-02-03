@@ -7,7 +7,8 @@ use Doctrine\ORM\EntityRepository,
     Doctrine\ORM\Mapping\ClassMetadata,
     Doctrine\ORM\QueryBuilder,
     Gedmo\Searchable\SearchableListener,
-    Gedmo\Searchable\Processor\ProcessorManager;
+    Gedmo\Searchable\Processor\ProcessorManager,
+    Gedmo\Searchable\Entity\IndexedToken;
 
 class SearchableRepository extends EntityRepository
 {
@@ -37,24 +38,24 @@ class SearchableRepository extends EntityRepository
         }
     }
 
-    public function search($class, array $conditions = array(), array $select = array(), $queryDefaultType = self::QUERY_TYPE_OR)
+    public function search($classes, array $conditions = array(), array $select = array(), $queryDefaultType = self::QUERY_TYPE_OR)
     {
-        $qb = $this->getQueryBuilder($class, $conditions, $select, $queryDefaultType);
+        $qb = $this->getQueryBuilder($classes, $conditions, $select, $queryDefaultType);
 
         return $qb->getQuery()->getArrayResult();
     }
 
-    public function getQueryBuilder($class, array $conditions = array(), array $select = array(), $queryDefaultType = self::QUERY_TYPE_OR)
+    public function getQueryBuilder($classes, array $conditions = array(), array $select = array(), $queryDefaultType = self::QUERY_TYPE_OR)
     {
         $qb = $this->createQueryBuilder(self::STORED_OBJECT_CLASS);
 
-        $this->prepareSelectClause($class, $qb, $select);
-        $this->prepareWhereClause($class, $qb, $conditions, $queryDefaultType);
+        $this->prepareSelectClause($classes, $qb, $select);
+        $this->prepareWhereClause($classes, $qb, $conditions, $queryDefaultType);
 
         return $qb;
     }
 
-    protected function prepareSelectClause($class, QueryBuilder $qb, array $select)
+    protected function prepareSelectClause($classes, QueryBuilder $qb, array $select)
     {
         $select = empty($select) ? array(self::ID_FIELD, self::CLASS_FIELD, self::DATA_FIELD) : $select;
         $selectedFields = array();
@@ -73,11 +74,12 @@ class SearchableRepository extends EntityRepository
             ->join(self::STORED_OBJECT_ALIAS.'.tokens', self::INDEXED_TOKEN_ALIAS);
     }
 
-    protected function prepareWhereClause($class, QueryBuilder $qb, array $conditions, $queryDefaultType)
+    protected function prepareWhereClause($classes, QueryBuilder $qb, array $conditions, $queryDefaultType)
     {
         $queryDefaultType = $queryDefaultType === self::QUERY_TYPE_AND ? self::QUERY_TYPE_AND : self::QUERY_TYPE_OR;
         $expr = $queryDefaultType === self::QUERY_TYPE_AND ? $qb->expr()->andx() : $qb->expr()->orx();
         $valueAlias = self::INDEXED_TOKEN_ALIAS.'.';
+        $classes = is_array($classes) ? $classes : array($classes);
 
         foreach ($conditions as $condition) {
             // For now we don't care about special operators
@@ -125,9 +127,13 @@ class SearchableRepository extends EntityRepository
                             break;
                     }
 
+                    $meta = $this->getClassMetadata();
+                    $fieldMapping = $meta->getFieldMapping($field);
+                    $searchField = IndexedToken::getTokenFieldForORMType($fieldMapping['type']);
+
                     $tokenExpr = $qb->expr()->andx();
                     $tokenExpr->add($qb->expr()->eq(self::INDEXED_TOKEN_ALIAS.'.field', $qb->expr()->literal($field)));
-                    $tokenExpr->add($qb->expr()->$method($valueAlias.'token', $literalValue));
+                    $tokenExpr->add($qb->expr()->$method($valueAlias.$searchField, $literalValue));
 
                     $subExpr->add($tokenExpr);
                 }
@@ -136,17 +142,10 @@ class SearchableRepository extends EntityRepository
             }
         }
 
-        $cond = '';
-        
+        $qb->where($qb->expr()->in(sprintf('%s.class', self::STORED_OBJECT_ALIAS), $classes));
+
         if ($expr->__toString() !== '') {
-            $cond = 'AND ('.$expr.')';
-        }
-
-        $qb->where(sprintf('(%s.class = :class %s)', self::STORED_OBJECT_ALIAS, $cond));
-
-        $qb->setParameter('class', $class);
-        if (!empty($conditions) && in_array('visits', array_keys($conditions[0]))) {
-            die(var_dump($qb->getQuery()->getDql()));
+            $qb->andWhere($expr);
         }
     }
 

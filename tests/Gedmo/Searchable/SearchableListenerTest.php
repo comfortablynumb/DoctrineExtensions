@@ -5,7 +5,8 @@ namespace Gedmo\Searchable;
 use Tool\BaseTestCaseORM;
 use Doctrine\Common\EventManager;
 use Doctrine\Common\Util\Debug,
-    Searchable\Fixture\Entity\Article;
+    Searchable\Fixture\Entity\Article,
+    Gedmo\Searchable\Entity\IndexedToken;
 
 /**
  * These are tests for searchable behavior
@@ -41,8 +42,13 @@ class SearchableListenerTest extends BaseTestCaseORM
         $storedObjectsRepo = $this->em->getRepository(self::STORED_OBJECT_CLASS);
         
         $articleTitle = '  Title    with   spaces      ';
+        $date = new \DateTime();
+        $createdAt = $date->format('Y-m-d H:i:s');
+        $rating = (double) 99.5;
         $art0 = new Article();
         $art0->setTitle($articleTitle);
+        $art0->setCreatedAt($date);
+        $art0->setRating($rating);
 
         $this->em->persist($art0);
         $this->em->flush();
@@ -60,26 +66,45 @@ class SearchableListenerTest extends BaseTestCaseORM
         /** INSERTING OBJECTS  */
 
         // First we check the indexed tokens
-        $this->assertEquals(7, count($tokens));
+        $this->assertEquals(10, count($tokens));
 
         foreach ($tokens as $tokenData) {
-            $token = $tokenData['token'];
+            $token = $tokenData[IndexedToken::getTokenFieldForORMType($tokenData['type'])];
 
             switch ($tokenData['field']) {
                 case 'id':
                     $this->assertEquals(1, $token);
+                    $this->assertEquals($token, $tokenData['integerToken']);
 
                     break;
                 case 'title':
                     $this->assertTrue($token === 'title' || $token === 'with' || $token === 'spaces');
+                    $this->assertEquals($token, $tokenData['stringToken']);
 
                     break;
                 case 'category':
                     $this->assertTrue($token === 'default' || $token === 'category');
+                    $this->assertEquals($token, $tokenData['stringToken']);
 
                     break;
                 case 'visits':
                     $this->assertEquals(0, $token);
+                    $this->assertEquals($token, $tokenData['integerToken']);
+
+                    break;
+                case 'isPublished':
+                    $this->assertEquals(false, $token);
+                    $this->assertEquals($token, $tokenData['booleanToken']);
+
+                    break;
+                case 'createdAt':
+                    $this->assertEquals($createdAt, $token->format('Y-m-d H:i:s'));
+                    $this->assertEquals($token, $tokenData['dateTimeToken']);
+
+                    break;
+                case 'rating':
+                    $this->assertEquals($rating, $token);
+                    $this->assertEquals($token, $tokenData['decimalToken']);
 
                     break;
                 default:
@@ -92,12 +117,22 @@ class SearchableListenerTest extends BaseTestCaseORM
             'id'            => $art0->getId(),
             'title'         => $articleTitle,
             'category'      => 'Default Category',
-            'visits'        => 0
+            'visits'        => 0,
+            'isPublished'   => false,
+            'createdAt'     => $art0->getCreatedAt(),
+            'rating'        => $rating
         ), $storedObject->getData());
 
         /** UPDATING OBJECTS  */
         $articleTitle = ' NEW    TITLE   ';
+        $rating = (double) 80.34;
+        $date = new \DateTime();
+        $createdAt = $date->format('Y-m-d H:i:s');
+
         $art0->setTitle($articleTitle);
+        $art0->setCreatedAt($date);
+        $art0->setRating($rating);
+        
         $this->em->persist($art0);
         $this->em->flush();
 
@@ -108,26 +143,45 @@ class SearchableListenerTest extends BaseTestCaseORM
             ->getArrayResult();
 
         // First we check the indexed tokens
-        $this->assertEquals(6, count($tokens));
+        $this->assertEquals(9, count($tokens));
 
         foreach ($tokens as $tokenData) {
-            $token = $tokenData['token'];
+            $token = $tokenData[IndexedToken::getTokenFieldForORMType($tokenData['type'])];
 
             switch ($tokenData['field']) {
                 case 'id':
                     $this->assertEquals(1, $token);
+                    $this->assertEquals($token, $tokenData['integerToken']);
 
                     break;
                 case 'title':
                     $this->assertTrue($token === 'new' || $token === 'title');
+                    $this->assertEquals($token, $tokenData['stringToken']);
 
                     break;
                 case 'category':
                     $this->assertTrue($token === 'default' || $token === 'category');
+                    $this->assertEquals($token, $tokenData['stringToken']);
 
                     break;
                 case 'visits':
                     $this->assertEquals(0, $token);
+                    $this->assertEquals($token, $tokenData['integerToken']);
+
+                    break;
+                case 'isPublished':
+                    $this->assertEquals(false, $token);
+                    $this->assertEquals($token, $tokenData['booleanToken']);
+
+                    break;
+                case 'createdAt':
+                    $this->assertEquals($createdAt, $token->format('Y-m-d H:i:s'));
+                    $this->assertEquals($token, $tokenData['dateTimeToken']);
+
+                    break;
+                case 'rating':
+                    $this->assertEquals($rating, $token);
+                    $this->assertEquals($token, $tokenData['decimalToken']);
 
                     break;
                 default:
@@ -140,7 +194,10 @@ class SearchableListenerTest extends BaseTestCaseORM
             'id'            => $art0->getId(),
             'title'         => $articleTitle,
             'category'      => 'Default Category',
-            'visits'        => 0
+            'visits'        => 0,
+            'isPublished'   => false,
+            'createdAt'     => $art0->getCreatedAt(),
+            'rating'        => $rating
         ), $storedObject->getData());
 
         /** REMOVING OBJECTS  */

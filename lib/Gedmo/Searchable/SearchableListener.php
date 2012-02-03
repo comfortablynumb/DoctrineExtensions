@@ -119,6 +119,7 @@ class SearchableListener extends MappedEventSubscriber
             $uow = $om->getUnitOfWork();
             $meta = $om->getClassMetadata(get_class($object));
             $identifierField = $ea->getSingleIdentifierFieldName($meta);
+            $fieldMapping = $meta->getFieldMapping($identifierField);
             $id = $meta->getReflectionProperty($identifierField)->getValue($object);
             $storedObject = $this->pendingStoredObjectsUpdate[$oid];
             $storedObject->setObjectId($id);
@@ -137,6 +138,7 @@ class SearchableListener extends MappedEventSubscriber
             $indexedToken = new $indexedTokenClass;
 
             $indexedToken->setField($identifierField)
+                ->setTypeFromORMType($fieldMapping['type'])
                 ->setToken($id)
                 ->setStoredObject($storedObject);
             $om->persist($indexedToken);
@@ -181,7 +183,7 @@ class SearchableListener extends MappedEventSubscriber
     }
 
     /**
-     * Processes searchable object
+     * Process searchable object
      *
      * @param string $action
      * @param object $object
@@ -243,11 +245,13 @@ class SearchableListener extends MappedEventSubscriber
                     $refl->setAccessible(true);
                     $value = $refl->getValue($object);
                     $tokenizedValue = $processorManager->runIndexTimeProcessors($field, $value);
+                    $fieldMapping = $meta->getFieldMapping($field);
 
                     foreach ($tokenizedValue as $token) {
                         $indexedToken = new $indexedTokenClass;
 
                         $indexedToken->setField($field)
+                            ->setTypeFromORMType($fieldMapping['type'])
                             ->setToken($token)
                             ->setStoredObject($storedObject);
                         $storedObject->addToken($indexedToken);
@@ -295,8 +299,7 @@ class SearchableListener extends MappedEventSubscriber
         try {
             $storedObject = $query->getSingleResult();
 
-            // There has to be a better way to do this. IndexedTokens are NOT removed by the DB, at least in
-            // SQLite
+            // There has to be a better way to do this. IndexedTokens are NOT removed by the DB
             $om->createQuery(sprintf('DELETE FROM %s it WHERE it.storedObject = :storedObject',
                 self::INDEXED_TOKEN_CLASS))
                 ->setParameter('storedObject', $storedObject)

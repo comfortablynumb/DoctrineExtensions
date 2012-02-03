@@ -32,7 +32,28 @@ class Article
      * @ORM\Column(name="visits", type="integer")
      */
     private $visits = 0;
-    
+
+    /**
+     * @ORM\Column(name="rating", type="decimal")
+     */
+    private $rating;
+
+    /**
+     * @ORM\Column(name="is_published", type="boolean")
+     */
+    private $isPublished = false;
+
+    /**
+     * @ORM\Column(name="created_at", type="datetime")
+     */
+    private $createdAt;
+
+
+    public function __construct()
+    {
+        $this->setRating((double) 0);
+        $this->setCreatedAt(new \DateTime());
+    }
 
     public function getId()
     {
@@ -67,5 +88,43 @@ class Article
     public function getVisits()
     {
         return $this->visits;
+    }
+
+    public function setCreatedAt($createdAt)
+    {
+        $this->createdAt = new ExtendedDateTime($createdAt->format('Y-m-d H:i:s'));
+    }
+
+    public function getCreatedAt()
+    {
+        return $this->createdAt;
+    }
+
+    public function setIsPublished($isPublished)
+    {
+        $this->isPublished = $isPublished;
+    }
+
+    public function getIsPublished()
+    {
+        return $this->isPublished;
+    }
+
+    public function setRating($rating)
+    {
+        $this->rating = $rating;
+    }
+
+    public function getRating()
+    {
+        return $this->rating;
+    }
+}
+
+class ExtendedDateTime extends \DateTime
+{
+    public function __toString()
+    {
+        return $this->format('Y-m-d H:i:s');
     }
 }

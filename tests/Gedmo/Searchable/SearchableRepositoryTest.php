@@ -46,13 +46,25 @@ class SearchableRepositoryTest extends BaseTestCaseORM
 
         $this->assertEquals(4, count($results));
 
-        $results = $this->searchableRepository->search(self::ARTICLE, array(array('title' => 'title wonderful article')));
+        $results = $this->searchableRepository->getQueryBuilder(self::ARTICLE, array(array('title' => 'title wonderful article')));
 
         $this->assertEquals(1, count($results));
 
         $results = $this->searchableRepository->search(self::ARTICLE, array(array('visits' => array('>=' => 100))));
 
         $this->assertEquals(2, count($results));
+
+        $results = $this->searchableRepository->search(self::ARTICLE, array(array('isPublished' => true)));
+
+        $this->assertEquals(1, count($results));
+
+        $results = $this->searchableRepository->search(self::ARTICLE, array(array('createdAt' => array('<=' => '2009-02-16 00:00:00'))));
+
+        $this->assertEquals(1, count($results));
+
+        $results = $this->searchableRepository->search(self::ARTICLE, array(array('rating' => array('>=' => 50))));
+
+        $this->assertEquals(1, count($results));
     }
 
     protected function getUsedEntityFixtures()
@@ -66,10 +78,15 @@ class SearchableRepositoryTest extends BaseTestCaseORM
 
     private function populate()
     {
+        $date = \DateTime::createFromFormat('j-M-Y', '15-Feb-2009');
+
         $art1 = $this->createArticle();
         $art1->setTitle('New title for this wonderful Article');
         $art1->setCategory('Computers');
         $art1->setVisits(100);
+        $art1->setIsPublished(true);
+        $art1->setCreatedAt($date);
+        $art1->setRating((double) 60);
 
         $art2 = $this->createArticle();
         $art2->setTitle('Barcelona wins again vs Real Madrid');
