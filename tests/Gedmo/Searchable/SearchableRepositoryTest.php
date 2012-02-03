@@ -46,24 +46,29 @@ class SearchableRepositoryTest extends BaseTestCaseORM
 
         $this->assertEquals(4, count($results));
 
-        $results = $this->searchableRepository->getQueryBuilder(self::ARTICLE, array(array('title' => 'title wonderful article')));
+        $results = $this->searchableRepository->getQueryBuilder(self::ARTICLE, array('title' => 'title wonderful article'));
 
         $this->assertEquals(1, count($results));
 
-        $results = $this->searchableRepository->search(self::ARTICLE, array(array('visits' => array('>=' => 100))));
+        $results = $this->searchableRepository->search(self::ARTICLE, array('visits' => array('>=' => 100)));
 
         $this->assertEquals(2, count($results));
 
-        $results = $this->searchableRepository->search(self::ARTICLE, array(array('isPublished' => true)));
+        $results = $this->searchableRepository->search(self::ARTICLE, array('isPublished' => true));
 
         $this->assertEquals(1, count($results));
 
-        $results = $this->searchableRepository->search(self::ARTICLE, array(array('createdAt' => array('<=' => '2009-02-16 00:00:00'))));
+        $results = $this->searchableRepository->search(self::ARTICLE, array('createdAt' => array('<=' => '2009-02-16 00:00:00')));
 
         $this->assertEquals(1, count($results));
 
-        $results = $this->searchableRepository->search(self::ARTICLE, array(array('rating' => array('>=' => 50))));
+        $results = $this->searchableRepository->search(self::ARTICLE, array('rating' => array('>=' => 50)));
 
+        $this->assertEquals(1, count($results));
+
+        $results = $this->searchableRepository->getQuery(self::ARTICLE, array(
+            'rating' => array('<=' => 50), 'visits' => array('>=' => 3400)), SearchableRepository::QUERY_TYPE_AND);
+        
         $this->assertEquals(1, count($results));
     }
 

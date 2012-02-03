@@ -38,14 +38,17 @@ class SearchableRepository extends EntityRepository
         }
     }
 
-    public function search($classes, array $conditions = array(), array $select = array(), $queryDefaultType = self::QUERY_TYPE_OR)
+    public function search($classes, array $conditions = array(), $queryDefaultType = self::QUERY_TYPE_OR, array $select = array())
     {
-        $qb = $this->getQueryBuilder($classes, $conditions, $select, $queryDefaultType);
-
-        return $qb->getQuery()->getArrayResult();
+        return $this->getQuery($classes, $conditions, $queryDefaultType, $select)->getArrayResult();
     }
 
-    public function getQueryBuilder($classes, array $conditions = array(), array $select = array(), $queryDefaultType = self::QUERY_TYPE_OR)
+    public function getQuery($classes, array $conditions = array(), $queryDefaultType = self::QUERY_TYPE_OR, array $select = array())
+    {
+        return $this->getQueryBuilder($classes, $conditions, $queryDefaultType, $select)->getQuery();
+    }
+
+    public function getQueryBuilder($classes, array $conditions = array(), $queryDefaultType = self::QUERY_TYPE_OR, array $select = array())
     {
         $qb = $this->createQueryBuilder(self::STORED_OBJECT_CLASS);
 
@@ -81,11 +84,11 @@ class SearchableRepository extends EntityRepository
         $valueAlias = self::INDEXED_TOKEN_ALIAS.'.';
         $classes = is_array($classes) ? $classes : array($classes);
 
-        foreach ($conditions as $condition) {
+        foreach ($conditions as $fieldOrOperator => $condition) {
             // For now we don't care about special operators
-            if (!$this->isSpecialOperator($condition)) {
-                $field = key($condition);
-                $value = current($condition);
+            if (!$this->isSpecialOperator($fieldOrOperator)) {
+                $field = $fieldOrOperator;
+                $value = $condition;
                 $operator = '=';
                 
                 if (is_array($value)) {
@@ -149,7 +152,7 @@ class SearchableRepository extends EntityRepository
         }
     }
 
-    protected function isSpecialOperator(array $condition)
+    protected function isSpecialOperator($operator)
     {
         // TODO: Add support for special operators (to create subqueries, etc)
 
