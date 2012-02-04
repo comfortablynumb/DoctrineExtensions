@@ -38,27 +38,27 @@ class SearchableRepository extends EntityRepository
         }
     }
 
-    public function search($classes, array $conditions = array(), $queryDefaultType = self::QUERY_TYPE_OR, array $select = array())
+    public function search(array $conditions = array(), $queryDefaultType = self::QUERY_TYPE_OR, array $select = array())
     {
-        return $this->getQuery($classes, $conditions, $queryDefaultType, $select)->getArrayResult();
+        return $this->getQuery($conditions, $queryDefaultType, $select)->getArrayResult();
     }
 
-    public function getQuery($classes, array $conditions = array(), $queryDefaultType = self::QUERY_TYPE_OR, array $select = array())
+    public function getQuery(array $conditions = array(), $queryDefaultType = self::QUERY_TYPE_OR, array $select = array())
     {
-        return $this->getQueryBuilder($classes, $conditions, $queryDefaultType, $select)->getQuery();
+        return $this->getQueryBuilder($conditions, $queryDefaultType, $select)->getQuery();
     }
 
-    public function getQueryBuilder($classes, array $conditions = array(), $queryDefaultType = self::QUERY_TYPE_OR, array $select = array())
+    public function getQueryBuilder(array $conditions = array(), $queryDefaultType = self::QUERY_TYPE_OR, array $select = array())
     {
         $qb = $this->createQueryBuilder(self::STORED_OBJECT_CLASS);
 
-        $this->prepareSelectClause($classes, $qb, $select);
-        $this->prepareWhereClause($classes, $qb, $conditions, $queryDefaultType);
+        $this->prepareSelectClause($qb, $select);
+        $this->prepareWhereClause($qb, $conditions, $queryDefaultType);
 
         return $qb;
     }
 
-    protected function prepareSelectClause($classes, QueryBuilder $qb, array $select)
+    protected function prepareSelectClause(QueryBuilder $qb, array $select)
     {
         $select = empty($select) ? array(self::ID_FIELD, self::CLASS_FIELD, self::DATA_FIELD) : $select;
         $selectedFields = array();
@@ -77,16 +77,20 @@ class SearchableRepository extends EntityRepository
             ->join(self::STORED_OBJECT_ALIAS.'.tokens', self::INDEXED_TOKEN_ALIAS);
     }
 
-    protected function prepareWhereClause($classes, QueryBuilder $qb, array $conditions, $queryDefaultType)
+    protected function prepareWhereClause(QueryBuilder $qb, array $conditions, $queryDefaultType)
     {
         $queryDefaultType = $queryDefaultType === self::QUERY_TYPE_AND ? self::QUERY_TYPE_AND : self::QUERY_TYPE_OR;
-        $expr = $queryDefaultType === self::QUERY_TYPE_AND ? $qb->expr()->andx() : $qb->expr()->orx();
-        $valueAlias = self::INDEXED_TOKEN_ALIAS.'.';
-        $classes = is_array($classes) ? $classes : array($classes);
-
+        $expr = $qb->expr()->orx();
+        $indexedTokenAlias = self::INDEXED_TOKEN_ALIAS;
+        $indexedTokenAlias2 = $indexedTokenAlias.'_2';
+        $storedObjectAlias = self::STORED_OBJECT_ALIAS;
+        $storedObjectAlias2 = $storedObjectAlias.'_2';
+        $expectedConditions = 0;
+        
         foreach ($conditions as $fieldOrOperator => $condition) {
             // For now we don't care about special operators
             if (!$this->isSpecialOperator($fieldOrOperator)) {
+                ++$expectedConditions;
                 $field = $fieldOrOperator;
                 $value = $condition;
                 $operator = '=';
@@ -131,12 +135,12 @@ class SearchableRepository extends EntityRepository
                     }
 
                     $meta = $this->getClassMetadata();
-                    $fieldMapping = $meta->getFieldMapping($field);
+                    $fieldMapping = $meta->getFieldMapping(substr($field, strpos($field, '.') + 1));
                     $searchField = IndexedToken::getTokenFieldForORMType($fieldMapping['type']);
 
                     $tokenExpr = $qb->expr()->andx();
-                    $tokenExpr->add($qb->expr()->eq(self::INDEXED_TOKEN_ALIAS.'.field', $qb->expr()->literal($field)));
-                    $tokenExpr->add($qb->expr()->$method($valueAlias.$searchField, $literalValue));
+                    $tokenExpr->add($qb->expr()->eq($indexedTokenAlias2.'.field', $qb->expr()->literal($field)));
+                    $tokenExpr->add($qb->expr()->$method($indexedTokenAlias2.'.'.$searchField, $literalValue));
 
                     $subExpr->add($tokenExpr);
                 }
@@ -145,10 +149,11 @@ class SearchableRepository extends EntityRepository
             }
         }
 
-        $qb->where($qb->expr()->in(sprintf('%s.class', self::STORED_OBJECT_ALIAS), $classes));
-
         if ($expr->__toString() !== '') {
-            $qb->andWhere($expr);
+            $subQuery = $queryDefaultType === self::QUERY_TYPE_AND ?
+                $expectedConditions.' = (SELECT COUNT('.$indexedTokenAlias2.') FROM '.self::INDEXED_TOKEN_CLASS.' '.$indexedTokenAlias2.' JOIN '.$indexedTokenAlias2.'.storedObject '.$storedObjectAlias2.' WHERE ('.$expr.') AND '.$storedObjectAlias.'.id = '.$storedObjectAlias2.'.id)' :
+                $indexedTokenAlias.' IN (SELECT '.$indexedTokenAlias2.' FROM '.self::INDEXED_TOKEN_CLASS.' '.$indexedTokenAlias2.' WHERE '.$expr.')';
+            $qb->where($subQuery);
         }
     }
 

@@ -42,33 +42,34 @@ class SearchableRepositoryTest extends BaseTestCaseORM
     
     public function testSearchableRepository()
     {
-        $results = $this->searchableRepository->search(self::ARTICLE);
+        $results = $this->searchableRepository->search();
 
         $this->assertEquals(4, count($results));
 
-        $results = $this->searchableRepository->getQueryBuilder(self::ARTICLE, array('title' => 'title wonderful article'));
+        $results = $this->searchableRepository->search(array(self::ARTICLE.'.title' => 'title wonderful article'));
 
         $this->assertEquals(1, count($results));
 
-        $results = $this->searchableRepository->search(self::ARTICLE, array('visits' => array('>=' => 100)));
+        $results = $this->searchableRepository->search(array(self::ARTICLE.'.visits' => array('>=' => 100)));
 
         $this->assertEquals(2, count($results));
 
-        $results = $this->searchableRepository->search(self::ARTICLE, array('isPublished' => true));
+        $results = $this->searchableRepository->search(array(self::ARTICLE.'.isPublished' => true));
 
         $this->assertEquals(1, count($results));
 
-        $results = $this->searchableRepository->search(self::ARTICLE, array('createdAt' => array('<=' => '2009-02-16 00:00:00')));
+        $results = $this->searchableRepository->search(array(self::ARTICLE.'.createdAt' => array('<=' => '2009-02-16 00:00:00')));
 
         $this->assertEquals(1, count($results));
 
-        $results = $this->searchableRepository->search(self::ARTICLE, array('rating' => array('>=' => 50)));
+        $results = $this->searchableRepository->search(array(self::ARTICLE.'.rating' => array('>=' => 50)));
 
         $this->assertEquals(1, count($results));
 
-        $results = $this->searchableRepository->getQuery(self::ARTICLE, array(
-            'rating' => array('<=' => 50), 'visits' => array('>=' => 3400)), SearchableRepository::QUERY_TYPE_AND);
-        
+        $results = $this->searchableRepository->search(array(
+            self::ARTICLE.'.rating' => array('<=' => 50),
+            self::ARTICLE.'.visits' => array('>=' => 3400)), SearchableRepository::QUERY_TYPE_AND);
+
         $this->assertEquals(1, count($results));
     }
 

@@ -137,7 +137,7 @@ class SearchableListener extends MappedEventSubscriber
             $indexedTokenClass = $this->getIndexedTokenClass($ea, $meta->name);
             $indexedToken = new $indexedTokenClass;
 
-            $indexedToken->setField($identifierField)
+            $indexedToken->setField($meta->getName().'.'.$identifierField)
                 ->setTypeFromORMType($fieldMapping['type'])
                 ->setToken($id)
                 ->setStoredObject($storedObject);
@@ -250,7 +250,7 @@ class SearchableListener extends MappedEventSubscriber
                     foreach ($tokenizedValue as $token) {
                         $indexedToken = new $indexedTokenClass;
 
-                        $indexedToken->setField($field)
+                        $indexedToken->setField($class.'.'.$field)
                             ->setTypeFromORMType($fieldMapping['type'])
                             ->setToken($token)
                             ->setStoredObject($storedObject);

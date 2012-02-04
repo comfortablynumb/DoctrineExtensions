@@ -38,6 +38,10 @@ class ProcessorManager
 
     public function runProcessors($field, $value, $context)
     {
+        $pos = strpos($field, '.');
+        $field = $pos !== false ? substr($field, $pos + 1) : $field;
+
+
         if (!isset($this->config['fields'][$field])) {
             throw new InvalidArgumentException(sprintf('Can\'t run processors on field "%s". It\'s not searchable.', $field));
         }

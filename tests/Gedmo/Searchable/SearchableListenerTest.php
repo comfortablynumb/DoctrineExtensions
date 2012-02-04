@@ -72,37 +72,37 @@ class SearchableListenerTest extends BaseTestCaseORM
             $token = $tokenData[IndexedToken::getTokenFieldForORMType($tokenData['type'])];
 
             switch ($tokenData['field']) {
-                case 'id':
+                case self::ARTICLE.'.id':
                     $this->assertEquals(1, $token);
                     $this->assertEquals($token, $tokenData['integerToken']);
 
                     break;
-                case 'title':
+                case self::ARTICLE.'.title':
                     $this->assertTrue($token === 'title' || $token === 'with' || $token === 'spaces');
                     $this->assertEquals($token, $tokenData['stringToken']);
 
                     break;
-                case 'category':
+                case self::ARTICLE.'.category':
                     $this->assertTrue($token === 'default' || $token === 'category');
                     $this->assertEquals($token, $tokenData['stringToken']);
 
                     break;
-                case 'visits':
+                case self::ARTICLE.'.visits':
                     $this->assertEquals(0, $token);
                     $this->assertEquals($token, $tokenData['integerToken']);
 
                     break;
-                case 'isPublished':
+                case self::ARTICLE.'.isPublished':
                     $this->assertEquals(false, $token);
                     $this->assertEquals($token, $tokenData['booleanToken']);
 
                     break;
-                case 'createdAt':
+                case self::ARTICLE.'.createdAt':
                     $this->assertEquals($createdAt, $token->format('Y-m-d H:i:s'));
                     $this->assertEquals($token, $tokenData['dateTimeToken']);
 
                     break;
-                case 'rating':
+                case self::ARTICLE.'.rating':
                     $this->assertEquals($rating, $token);
                     $this->assertEquals($token, $tokenData['decimalToken']);
 
@@ -149,37 +149,37 @@ class SearchableListenerTest extends BaseTestCaseORM
             $token = $tokenData[IndexedToken::getTokenFieldForORMType($tokenData['type'])];
 
             switch ($tokenData['field']) {
-                case 'id':
+                case self::ARTICLE.'.id':
                     $this->assertEquals(1, $token);
                     $this->assertEquals($token, $tokenData['integerToken']);
 
                     break;
-                case 'title':
+                case self::ARTICLE.'.title':
                     $this->assertTrue($token === 'new' || $token === 'title');
                     $this->assertEquals($token, $tokenData['stringToken']);
 
                     break;
-                case 'category':
+                case self::ARTICLE.'.category':
                     $this->assertTrue($token === 'default' || $token === 'category');
                     $this->assertEquals($token, $tokenData['stringToken']);
 
                     break;
-                case 'visits':
+                case self::ARTICLE.'.visits':
                     $this->assertEquals(0, $token);
                     $this->assertEquals($token, $tokenData['integerToken']);
 
                     break;
-                case 'isPublished':
+                case self::ARTICLE.'.isPublished':
                     $this->assertEquals(false, $token);
                     $this->assertEquals($token, $tokenData['booleanToken']);
 
                     break;
-                case 'createdAt':
+                case self::ARTICLE.'.createdAt':
                     $this->assertEquals($createdAt, $token->format('Y-m-d H:i:s'));
                     $this->assertEquals($token, $tokenData['dateTimeToken']);
 
                     break;
-                case 'rating':
+                case self::ARTICLE.'.rating':
                     $this->assertEquals($rating, $token);
                     $this->assertEquals($token, $tokenData['decimalToken']);
 
